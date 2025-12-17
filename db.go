@@ -40,3 +40,12 @@ func SetupDB() (*sql.DB, error) {
 
 	return db, nil
 }
+
+func insertEntry(db *sql.DB, entry DataEntry) (sql.Result, error) {
+	sql := `insert into entries (timestamp, temperature, gasLevel) values (?, ?, ?)`
+	result, err := db.Exec(sql, entry.temperature, entry.gasLevel)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
