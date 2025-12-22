@@ -1,23 +1,37 @@
 package app
 
 import (
+	"log"
+	"net/http"
+	"os"
+	"strings"
+
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/joho/godotenv"
 )
 
 // AuthMiddleware verifies that the sender has tha apikey
-func AuthMiddleware() gin.HandlerFunc {
-	// Need to check the api key from the .env file
-	return func(c *gin.Context) {}
+func AuthMiddleware(c *gin.Context) {
+	authHeader := c.GetHeader("Authorization")
+	if authHeader == "" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No Authorization header"})
+	}
+	dotenv := goDotEnvVariable("ARDUINO_API_KEY")
+	apiKey := strings.Split(authHeader, "Bearer ")[1]
+	if apiKey != dotenv {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "No authorization"})
+	}
+	c.Next()
 }
 
-func HashPassword(password string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
-	return string(bytes), err
-}
+func goDotEnvVariable(key string) string {
 
-// VerifyPassword verifies if the given password matches the stored hash.
-func VerifyPassword(password, hash string) bool {
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	return err == nil
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
